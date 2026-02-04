@@ -9,10 +9,11 @@ import pygame.locals
 
 from game_world.racetrack import RaceTrack, load_track
 from random_bot import random_move
+import traceback
 
-TRACK = load_track("./tracks/trivial.pkl")
+TRACK = load_track("./tracks/simple.pkl")
 PLAYER = random_move
-REPLAY_SPEED = 0.1  # seconds per move in the replay. (lower is faster)
+REPLAY_SPEED = 1.0  # seconds per move in the replay. (lower is faster)
 SHOW_REPLAY = True
 
 
@@ -53,16 +54,25 @@ class Game:
         self.history = []
 
     def tick(self) -> tuple[Status, str]:
+        if self.track.buttons[self.pos]:
+            self.track.toggle(self.track.button_colors[self.pos])
         track_copy = deepcopy(self.track)
         start_time = monotonic()
-        action = self.player(self.pos, track_copy)
+        try:
+            action = self.player(self.pos, track_copy)
+        except Exception as e:
+            return (
+                Status.DNF,
+                f"Racer crashed with the following error message:\n{traceback.format_exc()}",
+            )
         time_taken = monotonic() - start_time
         self.time -= time_taken
         self.history.append(action)
         if self.time < 0:
             return Status.DNF, "Timed Out"
         self.time += min(time_taken, self.delay)
-        if not (-1 <= action[0] <= 1 and -1 <= action[1] <= 1) or 0 not in action:
+        options = {(1, 0), (-1, 0), (0, 1), (0, -1)}
+        if action not in options:
             return Status.DNF, f"Racer made illegal move {action}!"
         self.pos = (self.pos[0] + action[0], self.pos[1] + action[1])
         if not (
@@ -83,8 +93,6 @@ class Game:
                     Status.DNF,
                     f"Racer spent {self.turns_without_progress} ticks dawdling!",
                 )
-        if self.track.buttons[self.pos]:
-            self.track.toggle(self.track.colors[self.pos])
         if self.pos == self.track.target:
             return (
                 Status.FINISH,
@@ -127,13 +135,13 @@ def watch_replay(track: RaceTrack, history: list[Point], time_per_move: float):
     pygame.init()
     screen = pygame.display.set_mode(track.screen_size)
     done = False
-    track_surface = game.track.surface
+    track_surface = game.track.render()
 
     while True:
 
         p = min(p + dt / time_per_move, 1)
+        track_surface = game.track.render()
         if p >= 1:
-            track_surface = game.track.surface
             if done:
                 break
             status, _ = game.tick()
