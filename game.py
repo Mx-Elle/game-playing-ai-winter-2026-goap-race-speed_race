@@ -12,7 +12,7 @@ from random_bot import random_move
 from jack_bot import bot_action
 import traceback
 
-TRACK = load_track("./tracks/no_choice.pkl")
+TRACK = load_track("./tracks/complex_button.pkl")
 PLAYER = bot_action
 REPLAY_SPEED = .2  # seconds per move in the replay. (lower is faster)
 SHOW_REPLAY = True
