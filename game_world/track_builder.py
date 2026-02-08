@@ -6,10 +6,10 @@ import pygame.locals
 from racetrack import RaceTrack, blank_track, load_track
 
 WIDTH = 600
-GRID_SIZE = (7, 7)
+GRID_SIZE = (5, 5)
 # Where do you want to save this track? (Press 'enter' to save)
-SAVE_FILE_NAME = "tracks/basic_time_saver.pkl"
-STARTING_TRACK_NAME = "tracks/basic_time_saver.pkl"  # None if you want to start blank.
+SAVE_FILE_NAME = "tracks/complex_button.pkl"
+STARTING_TRACK_NAME = "tracks/complex_button.pkl"  # None if you want to start blank.
 # Hold A to paint in deactivated walls
 # press up and down on arrow keys to increase brush size
 

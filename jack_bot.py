@@ -1,5 +1,6 @@
 from collections import defaultdict
 from copy import deepcopy
+from functools import cache
 import heapq
 
 import numpy as np
@@ -13,6 +14,9 @@ def bot_action(location: Point, track: RaceTrack) -> Point:
     # print(planned_moves)
 
     # if there is only one legal move
+    on_button = find_button_color(track, location)
+    if on_button != 0:
+        track.toggle(on_button)
     legal_move = []
     max_x, max_y = track.active.shape
     for opt in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
@@ -29,11 +33,13 @@ def bot_action(location: Point, track: RaceTrack) -> Point:
         ):
             continue
         legal_move.append(opt)
-
+    # print(legal_move)
+    # print(track.active)
     if len(legal_move) == 1:
         return legal_move[0]
 
     path = plan(location, track)
+    # print(path)
 
     # if planned_moves != [] or (
     #     path is not None and len(path) > distance(location, track.target)
@@ -45,13 +51,17 @@ def bot_action(location: Point, track: RaceTrack) -> Point:
         return (0, 0)
 
     next = path.pop(0)
+    # print((next[0] - location[0], next[1] - location[1]))
     return (next[0] - location[0], next[1] - location[1])
 
 
 def distance(point_a: Point, point_b: Point):
     return abs(point_b[0] - point_a[0]) + abs(point_b[1] - point_a[1])
 
+def find_button_color(track: RaceTrack, pt: Point):
+    return track.button_colors[pt[0]][pt[1]] if track.buttons[pt[0]][pt[1]] == 1 else 0
 
+@cache
 def actions_from_state(
     location: Point, track: RaceTrack
 ) -> set[tuple[Point, RaceTrack]]:
@@ -70,7 +80,7 @@ def actions_from_state(
             )
         ):
             continue
-        button = track.button_colors[neighbor[0]][neighbor[1]]
+        button = find_button_color(track, neighbor)
         new_track = deepcopy(track)
         if button != 0:
             new_track.toggle(button)
