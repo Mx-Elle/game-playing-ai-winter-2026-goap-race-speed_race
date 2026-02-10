@@ -12,7 +12,7 @@ from random_bot import random_move
 from jack_bot import bot_action
 import traceback
 
-TRACK = load_track("./tracks/time_saver.pkl")
+TRACK = load_track("./tracks/complicated_test.pkl")
 PLAYER = bot_action
 REPLAY_SPEED = .2  # seconds per move in the replay. (lower is faster)
 SHOW_REPLAY = True
@@ -166,8 +166,9 @@ def watch_replay(track: RaceTrack, history: list[Point], time_per_move: float):
 
 
 def main():
-    game = Game(PLAYER, TRACK, 10, 5)
+    game = Game(PLAYER, TRACK, 10, 5, max_turns_without_progress=500)
     _, msg = game.play_game()
+    print(msg)
     if SHOW_REPLAY:
         watch_replay(TRACK, game.history, REPLAY_SPEED)
     print(msg)
