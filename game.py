@@ -16,6 +16,9 @@ TRACK = load_track("./tracks/complicated_test.pkl")
 PLAYER = bot_action
 REPLAY_SPEED = .2  # seconds per move in the replay. (lower is faster)
 SHOW_REPLAY = True
+CLOCK = 10
+DELAY = 5
+MAX_TURNS_WITHOUT_PROGRESS = None  # None means no limit
 
 
 Point = tuple[int, int]
@@ -42,20 +45,24 @@ class Game:
         track: RaceTrack,
         time: float,
         delay: float,
-        max_turns_without_progress: int = 100,
+        max_turns_without_progress: int | None = None,
     ) -> None:
         self.player = player
         self.track = deepcopy(track)
         self.time = time
         self.delay = delay
         self.turns_without_progress = 0
-        self.max_turns_without_progress = max_turns_without_progress
+        self.max_turns_without_progress = (
+            max_turns_without_progress if max_turns_without_progress else float("inf")
+        )
         self.pos = track.spawn
         self.min_dist = float("inf")
         self.history = []
 
     def tick(self) -> tuple[Status, str]:
         track_copy = deepcopy(self.track)
+        if track_copy.buttons[self.pos]:
+            track_copy.toggle(self.track.button_colors[self.pos])
         start_time = monotonic()
         try:
             action = self.player(self.pos, track_copy)
@@ -126,7 +133,7 @@ def watch_replay(track: RaceTrack, history: list[Point], time_per_move: float):
     cell_h = track.screen_size[1] / track.shape[0]
 
     replay_player = replay_player_generator(history)
-    game = Game(replay_player, track, float("inf"), 0)
+    game = Game(replay_player, track, float("inf"), float("inf"), None)
     dt = 0
     p = 1
     move_start, move_end = game.pos, game.pos
@@ -166,7 +173,7 @@ def watch_replay(track: RaceTrack, history: list[Point], time_per_move: float):
 
 
 def main():
-    game = Game(PLAYER, TRACK, 10, 5, max_turns_without_progress=500)
+    game = Game(PLAYER, TRACK, CLOCK, DELAY, MAX_TURNS_WITHOUT_PROGRESS)
     _, msg = game.play_game()
     print(msg)
     if SHOW_REPLAY:
