@@ -11,7 +11,7 @@ from game_world.racetrack import RaceTrack, load_track
 from random_bot import random_move
 import traceback
 
-TRACK = load_track("./tracks/rooms.pkl")
+TRACK = load_track("./tracks/bbmaze.pkl")
 PLAYER = random_move
 REPLAY_SPEED = 0.05  # seconds per move in the replay. (lower is faster)
 SHOW_REPLAY = True
@@ -184,3 +184,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+#astar through game states, make a graph(tree of all states, and then use astar to find the best path to the goal)

@@ -12,34 +12,22 @@ from copy import deepcopy
 
 Point = tuple[int, int]
 
-agent = None
+# class Counter:
+#     def __init__(self):
+#         self.count = 0
 
-class PlannerAgent:
-    def __init__(self):
-        self.plan = None
-        self.moves = None
-        self.path_index = 0
-
-    def move(self, loc, track):
-
-        if self.plan is None:
-            self.plan, self.moves = make_plan(track)
-            self.path_index = 0
-
-        next_pos = self.moves[self.path_index + 1]
-        self.path_index += 1
-
-        dx = next_pos[0] - loc[0]
-        dy = next_pos[1] - loc[1]
-
-        return (dx, dy)
-
-
-
-
-
-
-
+#     def __call__(self):
+#         self.count += 1
+#         return self.count
+# c = Counter()
+class Node:
+    def __init__(self, state, position, cost, parent, action):
+        self.state = state              
+        self.position = position       
+        self.cost = cost
+        self.parent = parent
+    def __lt__(self, other):
+        return self.cost < other.cost
     
 def reachable_buttons(track: RaceTrack, agent_pos):
     buttons = []
@@ -67,7 +55,6 @@ def make_plan(track: RaceTrack):
         "cost": 0,
         "parent": None,
         "action": None,
-        "path": None,
     }
 
     frontier = []
@@ -75,15 +62,10 @@ def make_plan(track: RaceTrack):
     heapq.heappush(frontier, (0, counter, start_node))
     counter += 1
     best_cost = {}
-    best_solution = None
-    best_total_cost = float("inf")
     if track.buttons[start_node["pos"]] != 0:
         start_node["state"] = start_node["state"] ^ {track.button_colors[start_node["pos"]]} 
     while frontier:
         _, _, node = heapq.heappop(frontier)
-        
-        if node["cost"] >= best_total_cost:
-            continue
 
         key = (node["state"], node["pos"])
 
@@ -98,40 +80,24 @@ def make_plan(track: RaceTrack):
         
         if path is not None:
             if simulate_path(path, node["state"], track):
-                total_cost = node["cost"] + len(path)
-                if total_cost < best_total_cost:
-                    best_total_cost = total_cost
-                    node['path'] = node['path'] + path[1:] if node['path'] is not None else path
-                    best_solution = (node, state_track)
+                return reconstruct_plan(node, state_track)
         
         for color, pos, dist in reachable_buttons(state_track, node["pos"]):
 
             if pos == node["pos"]:
                 continue
 
-            new_state = node["state"]
-            path = astar(node["pos"], pos, state_track)
-            if path == None:
-                path = astar(node["pos"], pos, state_track, True)
-            for tile in path[1:]:
-                if track.buttons[tile] != 0:
-                    color = track.button_colors[tile]
-                    new_state = new_state ^ {color}
-
+            new_state = node["state"] ^ {color}
 
             child = {
                 "state": new_state,
                 "pos": pos,
-                "cost": node["cost"] + dist,  
+                "cost": node["cost"] + dist, # think about cost 
                 "parent": node,
                 "action": color,
-                "path": node['path'] + path[1:] if node['path'] is not None else path,
             }
             heapq.heappush(frontier, (child["cost"], counter, child))
             counter += 1
-    if best_solution is not None:
-        node, state_track = best_solution
-        return reconstruct_plan(node, state_track)
 
 def simulate_path(path, initial_state, track: RaceTrack):
 
@@ -139,6 +105,7 @@ def simulate_path(path, initial_state, track: RaceTrack):
     pos = path[0]
 
     for next_pos in path[1:]:
+        #should astar just exclude buttons? , path is returning green button
         state_track = apply_state(track, button_state)
 
         if next_pos not in state_track.find_traversable_cells():
@@ -155,12 +122,14 @@ def simulate_path(path, initial_state, track: RaceTrack):
 
 def reconstruct_plan(node, track):
     actions = []
-    moves = node['path']
+    moves = []
     while node ["parent"] is not None:
         actions.append(node["action"])
+        moves.append(node["pos"])
         node = node["parent"]
     actions.reverse()
-    actions.append(None)  
+    moves.reverse()
+
     return actions, moves
 
 def reconstruct_path(cameFrom, current, end):
@@ -202,7 +171,7 @@ def astar(start_point, end_point, track: RaceTrack, find_buttons=False):
             if neighbor not in safe or neighbor in closed:
                 continue
 
-            if find_buttons == False and track.buttons[neighbor] != 0 and neighbor != end_point:
+            if find_buttons == False and track.buttons[neighbor] != 0:
                 continue
             tentative_g = gScore[current] + 1
 
@@ -219,16 +188,15 @@ def astar(start_point, end_point, track: RaceTrack, find_buttons=False):
 
 
 def random_move(loc: Point, track: RaceTrack) -> Point:
-
    #print(track.get_grid_coord(loc[0], loc[1]))
+    safe = track.find_traversable_cells()
+    options = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    neighbors = {opt: (loc[0] + opt[0], loc[1] + opt[1]) for opt in options}
+    safe_options = [opt for opt in neighbors if neighbors[opt] in safe]
 
-    global agent
-
-    if agent is None:
-        agent = PlannerAgent()
-
-    return agent.move(loc, track)
-
+    plan, moves = make_plan(track)
+    print(plan)
+    print(moves)
         
     #move = astar(loc, track.target, track)[1]
 
